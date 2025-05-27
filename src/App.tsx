@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { runSimulations, assetClasses, glidepaths as defaultGlidepaths } from './simulator';
 import type { UserInputs } from './simulator';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const percentileSteps = Array.from({ length: 21 }, (_, i) => i * 5); // 0 to 100 in 5% steps
 
@@ -159,32 +160,40 @@ function App() {
 
       {chartData.length > 0 && (
         <div style={{ marginTop: '2rem' }}>
-          <h2>Results Table</h2>
+          <h2>Projected Pension Pot</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData}>
+              <XAxis dataKey="age" tickFormatter={(v) => v.toFixed(0)} />
+              <YAxis tickFormatter={(v) => `£${Math.round(v).toLocaleString()}`} />
+              <Tooltip formatter={(v: number) => `£${Math.round(v).toLocaleString()}`} labelFormatter={(l) => `Age ${l.toFixed(1)}`} />
+              <Legend />
+              {inputs.percentiles.map(p => (
+                <Line key={p} type="monotone" dataKey={`P${p}`} strokeWidth={2} dot={false} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+
+          <h2 style={{ marginTop: '2rem' }}>Final Outcome</h2>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ borderBottom: '1px solid #ccc' }}>Age</th>
                 {inputs.percentiles.map(p => (
                   <th key={p} style={{ borderBottom: '1px solid #ccc' }}>P{p}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {chartData
-                .filter((_, i) => i % 12 === 0 || i === chartData.length - 1)
-                .map((row, i) => (
-                  <tr key={i}>
-                    <td>{row.age.toFixed(1)}</td>
-                    {inputs.percentiles.map(p => (
-                      <td key={p}>£{Math.round(row[`P${p}`]).toLocaleString()}</td>
-                    ))}
-                  </tr>
+              <tr>
+                {inputs.percentiles.map(p => (
+                  <td key={p} style={{ fontWeight: 'bold' }}>£{Math.round(chartData[chartData.length - 1][`P${p}`]).toLocaleString()}</td>
                 ))}
+              </tr>
             </tbody>
           </table>
         </div>
       )}
 
+      {/* Admin Mode UI remains unchanged */}
       {isAdmin && (
         <div style={{ marginTop: '3rem' }}>
           <h2>🛠 Manage Lifestyle Profiles</h2>
