@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { runSimulations, assetClasses, glidepaths as defaultGlidepaths } from './simulator';
 import type { UserInputs } from './simulator';
 
 const percentileSteps = Array.from({ length: 21 }, (_, i) => i * 5); // 0 to 100 in 5% steps
-const isAdmin = false; // toggle this for admin mode
+const isAdmin = true; // toggle this for admin mode
 
 function App() {
   const [inputs, setInputs] = useState({
@@ -18,7 +18,14 @@ function App() {
     profileName: 'SMA',
   });
 
-  const [glidepaths, setGlidepaths] = useState({ ...defaultGlidepaths });
+  const [glidepaths, setGlidepaths] = useState(() => {
+    const saved = localStorage.getItem('glidepaths');
+    return saved ? JSON.parse(saved) : { ...defaultGlidepaths };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('glidepaths', JSON.stringify(glidepaths));
+  }, [glidepaths]);
 
   const handleChange = (field: string, value: string) => {
     setInputs({ ...inputs, [field]: value });
@@ -42,6 +49,10 @@ function App() {
   };
 
   const handleSubmit = () => {
+    if (!glidepaths[inputs.profileName]) {
+      alert("Selected profile no longer exists. Please choose another.");
+      return;
+    }
     const parsedInputs: UserInputs = {
       age: parseInt(inputs.age),
       startingSalary: parseFloat(inputs.startingSalary),
@@ -91,7 +102,7 @@ function App() {
             style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
           >
             {Object.keys(glidepaths).map(option => (
-              <option key={option}>{option}</option>
+              <option key={option} value={option}>{option}</option>
             ))}
           </select>
         </div>
