@@ -3,7 +3,7 @@ import { runSimulations, assetClasses, glidepaths as defaultGlidepaths } from '.
 import type { UserInputs } from './simulator';
 
 const percentileSteps = Array.from({ length: 21 }, (_, i) => i * 5); // 0 to 100 in 5% steps
-const isAdmin = true; // toggle this for admin mode
+const isAdmin = false; // toggle this for admin mode
 
 function App() {
   const [inputs, setInputs] = useState({
