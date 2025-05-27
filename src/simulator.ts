@@ -265,3 +265,5 @@ export {
   assetClasses,
   glidepaths,
   };
+
+  //removed console checks here.
