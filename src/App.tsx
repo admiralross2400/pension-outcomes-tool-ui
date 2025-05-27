@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { runSimulations, assetClasses, glidepaths as defaultGlidepaths } from './simulator';
 import type { UserInputs } from './simulator';
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const percentileSteps = Array.from({ length: 21 }, (_, i) => i * 5); // 0 to 100 in 5% steps
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [chartData, setChartData] = useState<{ age: number; [key: string]: number }[]>([]);
-  const [finalResults, setFinalResults] = useState<{ [key: string]: number }>({});
 
   const [inputs, setInputs] = useState({
     age: '22',
@@ -81,14 +79,7 @@ function App() {
       return row;
     });
 
-    const finalRow = data[data.length - 1];
-    const finalSummary: { [key: string]: number } = {};
-    parsedInputs.percentiles.forEach(p => {
-      finalSummary[`P${p}`] = finalRow[`P${p}`];
-    });
-
     setChartData(data);
-    setFinalResults(finalSummary);
   };
 
   return (
@@ -167,46 +158,122 @@ function App() {
       </button>
 
       {chartData.length > 0 && (
-        <>
-          <div style={{ marginTop: '2rem' }}>
-            <h2>Simulation Chart</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <XAxis dataKey="age" />
-                <YAxis tickFormatter={(val) => `£${(val / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(val) => `£${Math.round(val as number).toLocaleString()}`} />
-                <Legend />
+        <div style={{ marginTop: '2rem' }}>
+          <h2>Results Table</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: '1px solid #ccc' }}>Age</th>
                 {inputs.percentiles.map(p => (
-                  <Line key={p} type="monotone" dataKey={`P${p}`} strokeWidth={2} dot={false} />
+                  <th key={p} style={{ borderBottom: '1px solid #ccc' }}>P{p}</th>
                 ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div style={{ marginTop: '2rem' }}>
-            <h2>Final Values Table</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  {Object.keys(finalResults).map(p => (
-                    <th key={p} style={{ borderBottom: '1px solid #ccc' }}>{p}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {Object.values(finalResults).map((val, i) => (
-                    <td key={i}>£{Math.round(val).toLocaleString()}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </>
+              </tr>
+            </thead>
+            <tbody>
+              {chartData
+                .filter((_, i) => i % 12 === 0 || i === chartData.length - 1)
+                .map((row, i) => (
+                  <tr key={i}>
+                    <td>{row.age.toFixed(1)}</td>
+                    {inputs.percentiles.map(p => (
+                      <td key={p}>£{Math.round(row[`P${p}`]).toLocaleString()}</td>
+                    ))}
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      {/* Admin Editor continues unchanged */}
-      {/* ... keep admin mode glidepath editor as in your current code ... */}
+      {isAdmin && (
+        <div style={{ marginTop: '3rem' }}>
+          <h2>🛠 Manage Lifestyle Profiles</h2>
+
+          {Object.entries(glidepaths).map(([key, profile]) => (
+            <div key={key} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
+              <h3>
+                {key}
+                <button
+                  onClick={() => {
+                    const updated = { ...glidepaths };
+                    delete updated[key];
+                    setGlidepaths(updated);
+                  }}
+                  style={{ marginLeft: '1rem', color: 'red' }}
+                >
+                  Delete
+                </button>
+              </h3>
+              <label>Growth End:</label>
+              <input
+                type="number"
+                value={(profile as any).growthEnd}
+                onChange={e => {
+                  const updated = { ...glidepaths };
+                  updated[key].growthEnd = parseInt(e.target.value);
+                  setGlidepaths(updated);
+                }}
+              />
+              <br />
+              <label>Pre-Retirement End:</label>
+              <input
+                type="number"
+                value={(profile as any).preRetirementEnd}
+                onChange={e => {
+                  const updated = { ...glidepaths };
+                  updated[key].preRetirementEnd = parseInt(e.target.value);
+                  setGlidepaths(updated);
+                }}
+              />
+              {(['growth', 'preRetirement', 'atRetirement'] as const).map(stage => (
+                <div key={stage}>
+                  <h4>{stage}</h4>
+                  {Object.entries((profile as any)[stage].allocations).map(([asset, val]) => (
+                    <div key={asset}>
+                      <label>{asset}</label>
+                      <input
+                        type="number"
+                        value={(val as number * 100).toFixed(2)}
+                        onChange={e => {
+                          const updated = { ...glidepaths };
+                          updated[key][stage].allocations[asset] = parseFloat(e.target.value) / 100;
+                          setGlidepaths(updated);
+                        }}
+                      /> %
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+
+          <button
+            onClick={() => {
+              const newKey = prompt('Enter new profile name:');
+              if (!newKey || glidepaths[newKey]) return;
+              const newProfile = {
+                growth: {
+                  yearsToRetirement: 100,
+                  allocations: Object.fromEntries(assetClasses.map(a => [a.name, 0]))
+                },
+                preRetirement: {
+                  yearsToRetirement: 100,
+                  allocations: Object.fromEntries(assetClasses.map(a => [a.name, 0]))
+                },
+                atRetirement: {
+                  yearsToRetirement: 0,
+                  allocations: Object.fromEntries(assetClasses.map(a => [a.name, 0]))
+                },
+                growthEnd: 15,
+                preRetirementEnd: 10
+              };
+              setGlidepaths({ ...glidepaths, [newKey]: newProfile });
+            }}
+          >
+            ➕ Add New Profile
+          </button>
+        </div>
+      )}
     </div>
   );
 }
