@@ -18,7 +18,7 @@ function App() {
     profileName: 'SMA',
   });
 
-  const [glidepaths, setGlidepaths] = useState(() => {
+  const [glidepaths, setGlidepaths] = useState<Record<string, any>>(() => {
     const saved = localStorage.getItem('glidepaths');
     return saved ? JSON.parse(saved) : { ...defaultGlidepaths };
   });
@@ -143,69 +143,63 @@ function App() {
         <div style={{ marginTop: '3rem' }}>
           <h2>🛠 Manage Lifestyle Profiles</h2>
 
-          {Object.entries(glidepaths).map(([key, gp]) => {
-            const profile = gp;
-            return (
-              <div key={key} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-                <h3>
-                  {key}
-                  <button
-                    onClick={() => {
-                      const updated = { ...glidepaths };
-                      delete updated[key];
-                      setGlidepaths(updated);
-                    }}
-                    style={{ marginLeft: '1rem', color: 'red' }}
-                  >
-                    Delete
-                  </button>
-                </h3>
-                <label>Growth End:</label>
-                <input
-                  type="number"
-                  value={profile.growthEnd}
-                  onChange={e => {
+          {Object.entries(glidepaths).map(([key, profile]) => (
+            <div key={key} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
+              <h3>
+                {key}
+                <button
+                  onClick={() => {
                     const updated = { ...glidepaths };
-                    updated[key].growthEnd = parseInt(e.target.value);
+                    delete updated[key];
                     setGlidepaths(updated);
                   }}
-                />
-                <br />
-                <label>Pre-Retirement End:</label>
-                <input
-                  type="number"
-                  value={profile.preRetirementEnd}
-                  onChange={e => {
-                    const updated = { ...glidepaths };
-                    updated[key].preRetirementEnd = parseInt(e.target.value);
-                    setGlidepaths(updated);
-                  }}
-                />
-                {['growth', 'preRetirement', 'atRetirement'].map(stage => (
-                  <div key={stage}>
-                    <h4>{stage}</h4>
-                    {Object.entries(
-                      profile[stage as keyof Omit<typeof profile, 'growthEnd' | 'preRetirementEnd'>].allocations
-                    ).map(([asset, val]) => (
-                      <div key={asset}>
-                        <label>{asset}</label>
-                        <input
-                          type="number"
-                          value={(val * 100).toFixed(2)}
-                          onChange={e => {
-                            const updated = { ...glidepaths };
-                            updated[key][stage as keyof Omit<typeof profile, 'growthEnd' | 'preRetirementEnd'>].allocations[asset] =
-                              parseFloat(e.target.value) / 100;
-                            setGlidepaths(updated);
-                          }}
-                        /> %
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            );
-          })}
+                  style={{ marginLeft: '1rem', color: 'red' }}
+                >
+                  Delete
+                </button>
+              </h3>
+              <label>Growth End:</label>
+              <input
+                type="number"
+                value={profile.growthEnd}
+                onChange={e => {
+                  const updated = { ...glidepaths };
+                  updated[key].growthEnd = parseInt(e.target.value);
+                  setGlidepaths(updated);
+                }}
+              />
+              <br />
+              <label>Pre-Retirement End:</label>
+              <input
+                type="number"
+                value={profile.preRetirementEnd}
+                onChange={e => {
+                  const updated = { ...glidepaths };
+                  updated[key].preRetirementEnd = parseInt(e.target.value);
+                  setGlidepaths(updated);
+                }}
+              />
+              {['growth', 'preRetirement', 'atRetirement'].map(stage => (
+                <div key={stage}>
+                  <h4>{stage}</h4>
+                  {Object.entries(profile[stage].allocations).map(([asset, val]) => (
+                    <div key={asset}>
+                      <label>{asset}</label>
+                      <input
+                        type="number"
+                        value={(val * 100).toFixed(2)}
+                        onChange={e => {
+                          const updated = { ...glidepaths };
+                          updated[key][stage].allocations[asset] = parseFloat(e.target.value) / 100;
+                          setGlidepaths(updated);
+                        }}
+                      /> %
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
 
           <button
             onClick={() => {
