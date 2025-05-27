@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
 import { runSimulations, assetClasses, glidepaths as defaultGlidepaths } from './simulator';
 import type { UserInputs } from './simulator';
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const percentileSteps = Array.from({ length: 21 }, (_, i) => i * 5); // 0 to 100 in 5% steps
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [chartData, setChartData] = useState<{ age: number; [key: string]: number }[]>([]);
-  const [finalResults, setFinalResults] = useState<{ [key: string]: number }>({});
 
   const [inputs, setInputs] = useState({
     age: '22',
@@ -69,26 +66,8 @@ function App() {
       profileName: inputs.profileName
     };
 
-    const summary = runSimulations(parsedInputs, assetClasses, glidepaths[parsedInputs.profileName]);
-
-    const months = summary[parsedInputs.percentiles[0]].length;
-    const data = Array.from({ length: months }, (_, m) => {
-      const age = parsedInputs.age + m / 12;
-      const row: { age: number; [key: string]: number } = { age };
-      parsedInputs.percentiles.forEach(p => {
-        row[`P${p}`] = summary[p][m];
-      });
-      return row;
-    });
-
-    const finalRow = data[data.length - 1];
-    const finalSummary: { [key: string]: number } = {};
-    parsedInputs.percentiles.forEach(p => {
-      finalSummary[`P${p}`] = finalRow[`P${p}`];
-    });
-
-    setChartData(data);
-    setFinalResults(finalSummary);
+    const result = runSimulations(parsedInputs, assetClasses, glidepaths[parsedInputs.profileName]);
+    console.log("Simulation result:", result);
   };
 
   return (
@@ -166,45 +145,6 @@ function App() {
         Run Simulation
       </button>
 
-      {chartData.length > 0 && (
-        <>
-          <div style={{ marginTop: '2rem' }}>
-            <h2>Simulation Chart</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <XAxis dataKey="age" />
-                <YAxis tickFormatter={(val) => `£${(val / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(val) => `£${Math.round(val as number).toLocaleString()}`} />
-                <Legend />
-                {inputs.percentiles.map(p => (
-                  <Line key={p} type="monotone" dataKey={`P${p}`} strokeWidth={2} dot={false} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div style={{ marginTop: '2rem' }}>
-            <h2>Final Values Table</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  {Object.keys(finalResults).map(p => (
-                    <th key={p} style={{ borderBottom: '1px solid #ccc' }}>{p}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {Object.values(finalResults).map((val, i) => (
-                    <td key={i}>£{Math.round(val).toLocaleString()}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
       {isAdmin && (
         <div style={{ marginTop: '3rem' }}>
           <h2>🛠 Manage Lifestyle Profiles</h2>
@@ -227,7 +167,7 @@ function App() {
               <label>Growth End:</label>
               <input
                 type="number"
-                value={profile.growthEnd}
+                value={(profile as any).growthEnd}
                 onChange={e => {
                   const updated = { ...glidepaths };
                   updated[key].growthEnd = parseInt(e.target.value);
@@ -238,23 +178,22 @@ function App() {
               <label>Pre-Retirement End:</label>
               <input
                 type="number"
-                value={profile.preRetirementEnd}
+                value={(profile as any).preRetirementEnd}
                 onChange={e => {
                   const updated = { ...glidepaths };
                   updated[key].preRetirementEnd = parseInt(e.target.value);
                   setGlidepaths(updated);
                 }}
               />
-              {['growth', 'preRetirement', 'atRetirement'].map(stage => (
+              {(['growth', 'preRetirement', 'atRetirement'] as const).map(stage => (
                 <div key={stage}>
                   <h4>{stage}</h4>
-                  {Object.entries((profile as any)[stage].allocations).map(([asset, val]: [string, number]) => (
-
+                  {Object.entries((profile as any)[stage].allocations).map(([asset, val]) => (
                     <div key={asset}>
                       <label>{asset}</label>
                       <input
                         type="number"
-                        value={(val * 100).toFixed(2)}
+                        value={(val as number * 100).toFixed(2)}
                         onChange={e => {
                           const updated = { ...glidepaths };
                           updated[key][stage].allocations[asset] = parseFloat(e.target.value) / 100;
