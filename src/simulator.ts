@@ -269,7 +269,7 @@ export {
 
 
 
-const summary = runSimulations(user, assetClasses, glidepaths[user.profileName]);
+//const summary = runSimulations(user, assetClasses, glidepaths[user.profileName]);
 
 
 // Show every 5 years (60 months) for each percentile
