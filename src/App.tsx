@@ -74,15 +74,9 @@ function App() {
       <h1>Pension Outcomes Tool</h1>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-        {[
-          ['age', 'Age'],
-          ['startingSalary', 'Starting Salary (£)'],
-          ['salaryInflation', 'Salary Inflation (%)'],
-          ['contributionRate', 'Contribution Rate (%)'],
-          ['existingPot', 'Existing Pot (£)'],
-          ['retirementAge', 'Retirement Age'],
-          ['numSimulations', 'Number of Simulations'],
-        ].map(([key, label]) => (
+        {[['age', 'Age'], ['startingSalary', 'Starting Salary (£)'], ['salaryInflation', 'Salary Inflation (%)'],
+          ['contributionRate', 'Contribution Rate (%)'], ['existingPot', 'Existing Pot (£)'],
+          ['retirementAge', 'Retirement Age'], ['numSimulations', 'Number of Simulations']].map(([key, label]) => (
           <div key={key}>
             <label style={{ fontWeight: 600 }}>{label}</label><br />
             <input
@@ -161,7 +155,7 @@ function App() {
               <label>Growth End:</label>
               <input
                 type="number"
-                value={profile.growthEnd}
+                value={(profile as any).growthEnd}
                 onChange={e => {
                   const updated = { ...glidepaths };
                   updated[key].growthEnd = parseInt(e.target.value);
@@ -172,22 +166,22 @@ function App() {
               <label>Pre-Retirement End:</label>
               <input
                 type="number"
-                value={profile.preRetirementEnd}
+                value={(profile as any).preRetirementEnd}
                 onChange={e => {
                   const updated = { ...glidepaths };
                   updated[key].preRetirementEnd = parseInt(e.target.value);
                   setGlidepaths(updated);
                 }}
               />
-              {['growth', 'preRetirement', 'atRetirement'].map(stage => (
+              {(['growth', 'preRetirement', 'atRetirement'] as const).map(stage => (
                 <div key={stage}>
                   <h4>{stage}</h4>
-                  {Object.entries(profile[stage].allocations).map(([asset, val]) => (
+                  {Object.entries((profile as any)[stage].allocations).map(([asset, val]) => (
                     <div key={asset}>
                       <label>{asset}</label>
                       <input
                         type="number"
-                        value={(val * 100).toFixed(2)}
+                        value={(val as number * 100).toFixed(2)}
                         onChange={e => {
                           const updated = { ...glidepaths };
                           updated[key][stage].allocations[asset] = parseFloat(e.target.value) / 100;
