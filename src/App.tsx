@@ -6,6 +6,7 @@ const percentileSteps = Array.from({ length: 21 }, (_, i) => i * 5); // 0 to 100
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [chartData, setChartData] = useState<{ age: number; [key: string]: number }[]>([]);
 
   const [inputs, setInputs] = useState({
     age: '22',
@@ -66,8 +67,19 @@ function App() {
       profileName: inputs.profileName
     };
 
-    const result = runSimulations(parsedInputs, assetClasses, glidepaths[parsedInputs.profileName]);
-    console.log("Simulation result:", result);
+    const summary = runSimulations(parsedInputs, assetClasses, glidepaths[parsedInputs.profileName]);
+
+    const months = summary[parsedInputs.percentiles[0]].length;
+    const data = Array.from({ length: months }, (_, m) => {
+      const age = parsedInputs.age + m / 12;
+      const row: { age: number; [key: string]: number } = { age };
+      parsedInputs.percentiles.forEach(p => {
+        row[`P${p}`] = summary[p][m];
+      });
+      return row;
+    });
+
+    setChartData(data);
   };
 
   return (
@@ -144,6 +156,34 @@ function App() {
       <button onClick={handleSubmit} style={{ marginTop: '1rem', padding: '0.5rem 1.5rem', fontSize: '1rem' }}>
         Run Simulation
       </button>
+
+      {chartData.length > 0 && (
+        <div style={{ marginTop: '2rem' }}>
+          <h2>Results Table</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: '1px solid #ccc' }}>Age</th>
+                {inputs.percentiles.map(p => (
+                  <th key={p} style={{ borderBottom: '1px solid #ccc' }}>P{p}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {chartData
+                .filter((_, i) => i % 12 === 0 || i === chartData.length - 1)
+                .map((row, i) => (
+                  <tr key={i}>
+                    <td>{row.age.toFixed(1)}</td>
+                    {inputs.percentiles.map(p => (
+                      <td key={p}>£{Math.round(row[`P${p}`]).toLocaleString()}</td>
+                    ))}
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {isAdmin && (
         <div style={{ marginTop: '3rem' }}>
