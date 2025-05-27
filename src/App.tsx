@@ -3,9 +3,10 @@ import { runSimulations, assetClasses, glidepaths as defaultGlidepaths } from '.
 import type { UserInputs } from './simulator';
 
 const percentileSteps = Array.from({ length: 21 }, (_, i) => i * 5); // 0 to 100 in 5% steps
-const isAdmin = true; // toggle this for admin mode
 
 function App() {
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const [inputs, setInputs] = useState({
     age: '22',
     startingSalary: '25000',
@@ -71,7 +72,18 @@ function App() {
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: 800 }}>
-      <h1>Pension Outcomes Tool</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1>Pension Outcomes Tool</h1>
+        <label style={{ fontSize: '0.9rem' }}>
+          <input
+            type="checkbox"
+            checked={isAdmin}
+            onChange={() => setIsAdmin(!isAdmin)}
+            style={{ marginRight: '0.5rem' }}
+          />
+          Admin Mode
+        </label>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
         {[['age', 'Age'], ['startingSalary', 'Starting Salary (£)'], ['salaryInflation', 'Salary Inflation (%)'],
