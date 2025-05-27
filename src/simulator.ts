@@ -265,33 +265,3 @@ export {
   assetClasses,
   glidepaths,
   };
-
-
-
-
-//const summary = runSimulations(user, assetClasses, glidepaths[user.profileName]);
-
-
-// Show every 5 years (60 months) for each percentile
-//console.log(`\nProjected pension pot over time (every 5 years):`);
-//const months = (user.retirementAge - user.age) * 12 + 1;
-
-//for (let m = 0; m < months; m += 60) {
-//  const age = user.age + m / 12;
-//  const line = user.percentiles.map(p => `P${p}: £${Math.round(summary[p][m]).toLocaleString()}`);
-//  console.log(`Age ${age.toFixed(1)}: ${line.join(" | ")}`);
-//}
-
-// Final month
-//const finalMonth = months - 1;
-//const finalAge = user.age + finalMonth / 12;
-//const finalLine = user.percentiles.map(p => `P${p}: £${Math.round(summary[p][finalMonth]).toLocaleString()}`);
-//console.log(`Age ${finalAge.toFixed(1)}: ${finalLine.join(" | ")}`);
-
-
-//console.log(`\nMonthly projection data:`);
-//for (let m = 0; m < months; m++) {
-// const age = user.age + m / 12;
-//  const line = user.percentiles.map(p => `P${p}: £${Math.round(summary[p][m])}`).join(" | ");
-//  console.log(`Age ${age.toFixed(1)}: ${line}`);
-//}
