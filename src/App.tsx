@@ -1,36 +1,10 @@
 import { useState } from 'react';
-import { runSimulations, assetClasses, glidepaths } from './simulator';
+import { runSimulations, assetClasses, glidepaths as defaultGlidepaths } from './simulator';
 import type { UserInputs } from './simulator';
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid
-} from 'recharts';
 
-
-function exportToCSV(data: any[], filename = 'simulation_results.csv') {
-  if (data.length === 0) return;
-
-  const headers = Object.keys(data[0]);
-  const csvRows = [
-    headers.join(','), // header row
-    ...data.map(row =>
-      headers.map(h => row[h]).join(',')
-    )
-  ];
-
-  const csvContent = csvRows.join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-const profileOptions = ['SMA', 'SMAHighGrowth'];
+const profileOptions = Object.keys(defaultGlidepaths);
 const percentileSteps = Array.from({ length: 21 }, (_, i) => i * 5); // 0 to 100 in 5% steps
+const isAdmin = true; // toggle this for admin mode
 
 function App() {
   const [inputs, setInputs] = useState({
@@ -45,8 +19,7 @@ function App() {
     profileName: 'SMA',
   });
 
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [finalResults, setFinalResults] = useState<{ [p: string]: number }>({});
+  const [glidepaths, setGlidepaths] = useState({ ...defaultGlidepaths });
 
   const handleChange = (field: string, value: string) => {
     setInputs({ ...inputs, [field]: value });
@@ -83,40 +56,14 @@ function App() {
     };
 
     const result = runSimulations(parsedInputs, assetClasses, glidepaths[parsedInputs.profileName]);
-
-    // Prepare chart data
-    const months = result[parsedInputs.percentiles[0]].length;
-    const data: any[] = [];
-    for (let m = 0; m < months; m++) {
-      const age = parsedInputs.age + m / 12;
-      const entry: any = { age: parseFloat(age.toFixed(1)) };
-      for (const p of parsedInputs.percentiles) {
-        entry[`P${p}`] = Math.round(result[p][m]);
-      }
-      data.push(entry);
-    }
-    setChartData(data);
-
-    // Calculate final values
-    const final: { [p: string]: number } = {};
-    for (const p of parsedInputs.percentiles) {
-      const potArray = result[p];
-      final[`P${p}`] = Math.round(potArray[potArray.length - 1]);
-    }
-    setFinalResults(final);
+    console.log("Simulation result:", result);
   };
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: 800 }}>
       <h1>Pension Outcomes Tool</h1>
 
-      {/* Two-column grid of inputs */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '1rem',
-        marginBottom: '2rem'
-      }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
         {[
           ['age', 'Age'],
           ['startingSalary', 'Starting Salary (£)'],
@@ -137,7 +84,6 @@ function App() {
           </div>
         ))}
 
-        {/* Profile dropdown */}
         <div>
           <label style={{ fontWeight: 600 }}>Profile</label><br />
           <select
@@ -145,14 +91,13 @@ function App() {
             onChange={(e) => handleChange('profileName', e.target.value)}
             style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
           >
-            {profileOptions.map(option => (
+            {Object.keys(glidepaths).map(option => (
               <option key={option}>{option}</option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Percentile Dropdowns */}
       <div style={{ marginBottom: '1rem' }}>
         <label style={{ fontWeight: 600 }}>Percentiles (up to 5):</label>
         {inputs.percentiles.map((p, index) => (
@@ -184,53 +129,93 @@ function App() {
         Run Simulation
       </button>
 
-      {/* Chart */}
-      {chartData.length > 0 && (
+      {isAdmin && (
         <div style={{ marginTop: '3rem' }}>
-          <h2>Projected Pension Pot Over Time</h2>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="age" />
-              <YAxis tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => `£${v.toLocaleString()}`} />
-              <Legend />
-              {inputs.percentiles.map(p => (
-                <Line
-                  key={p}
-                  type="monotone"
-                  dataKey={`P${p}`}
-                  strokeWidth={2}
-                  stroke={`hsl(${parseInt(p) * 3}, 70%, 50%)`}
-                  dot={false}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+          <h2>🛠 Manage Lifestyle Profiles</h2>
 
-          {/* Final values table */}
-          <table style={{ marginTop: '2rem', width: '100%', fontSize: '1rem', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '0.5rem 1rem', borderBottom: '1px solid #ccc' }}>Percentile</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem 1rem', borderBottom: '1px solid #ccc' }}>Final Pot (£)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(finalResults).map(([p, val]) => (
-                <tr key={p}>
-                  <td style={{ padding: '0.5rem 1rem' }}>{p}</td>
-                  <td style={{ padding: '0.5rem 1rem' }}>£{val.toLocaleString()}</td>
-                </tr>
+          {Object.entries(glidepaths).map(([key, gp]) => (
+            <div key={key} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
+              <h3>
+                {key}
+                <button
+                  onClick={() => {
+                    const updated = { ...glidepaths };
+                    delete updated[key];
+                    setGlidepaths(updated);
+                  }}
+                  style={{ marginLeft: '1rem', color: 'red' }}
+                >
+                  Delete
+                </button>
+              </h3>
+              <label>Growth End:</label>
+              <input
+                type="number"
+                value={gp.growthEnd}
+                onChange={e => {
+                  const updated = { ...glidepaths };
+                  updated[key].growthEnd = parseInt(e.target.value);
+                  setGlidepaths(updated);
+                }}
+              />
+              <br />
+              <label>Pre-Retirement End:</label>
+              <input
+                type="number"
+                value={gp.preRetirementEnd}
+                onChange={e => {
+                  const updated = { ...glidepaths };
+                  updated[key].preRetirementEnd = parseInt(e.target.value);
+                  setGlidepaths(updated);
+                }}
+              />
+              {['growth', 'preRetirement', 'atRetirement'].map(stage => (
+                <div key={stage}>
+                  <h4>{stage}</h4>
+                  {Object.entries(gp[stage as keyof typeof gp].allocations).map(([asset, val]) => (
+                    <div key={asset}>
+                      <label>{asset}</label>
+                      <input
+                        type="number"
+                        value={(val * 100).toFixed(2)}
+                        onChange={e => {
+                          const updated = { ...glidepaths };
+                          updated[key][stage as keyof typeof gp].allocations[asset] = parseFloat(e.target.value) / 100;
+                          setGlidepaths(updated);
+                        }}
+                      /> %
+                    </div>
+                  ))}
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ))}
+
           <button
-  onClick={() => exportToCSV(chartData)}
-  style={{ marginTop: '1rem', padding: '0.5rem 1rem', fontSize: '1rem' }}
->
-  Download CSV
-</button>
+            onClick={() => {
+              const newKey = prompt('Enter new profile name:');
+              if (!newKey || glidepaths[newKey]) return;
+              const newProfile = {
+                growth: {
+                  yearsToRetirement: 100,
+                  allocations: Object.fromEntries(assetClasses.map(a => [a.name, 0]))
+                },
+                preRetirement: {
+                  yearsToRetirement: 100,
+                  allocations: Object.fromEntries(assetClasses.map(a => [a.name, 0]))
+                },
+                atRetirement: {
+                  yearsToRetirement: 0,
+                  allocations: Object.fromEntries(assetClasses.map(a => [a.name, 0]))
+                },
+                growthEnd: 15,
+                preRetirementEnd: 10
+              };
+              setGlidepaths({ ...glidepaths, [newKey]: newProfile });
+            }}
+          >
+            ➕ Add New Profile
+          </button>
         </div>
       )}
     </div>
