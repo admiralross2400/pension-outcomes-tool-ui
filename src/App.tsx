@@ -248,7 +248,8 @@ function App() {
               {['growth', 'preRetirement', 'atRetirement'].map(stage => (
                 <div key={stage}>
                   <h4>{stage}</h4>
-                  {Object.entries((profile as any)[stage].allocations).map(([asset, val]) => (
+                  {Object.entries((profile as any)[stage].allocations).map(([asset, val]: [string, number]) => (
+
                     <div key={asset}>
                       <label>{asset}</label>
                       <input
